@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Balloon Domino – play the demo</title>
+<meta name="description" content="Play the first 10 skies of Balloon Domino, the one-tap chain-reaction puzzle, right in your browser.">
+<meta name="theme-color" content="#D3F0FF">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="screens">
+    <section class="screen" id="home">
+      <canvas id="backdrop" aria-hidden="true"></canvas>
+      <div class="title">
+        <h1>Balloon<br>Domino</h1>
+        <p>One tap. One chain. Clear the sky.</p>
+        <span class="demo-tag">Browser demo · 10 skies</span>
+      </div>
+      <button class="chunky primary big" id="playBtn"></button>
+      <div class="row"><button class="chunky" id="levelsBtn"></button></div>
+    </section>
+
+    <section class="screen" id="levels">
+      <div class="hud"><button class="chunky icon" data-act="home" aria-label="Back"></button><h2>Levels</h2></div>
+      <div class="grid" id="grid"></div>
+      <p class="more">The full game has 400 skies, armoured balloons, bombs and two-tap skies.</p>
+    </section>
+
+    <section class="screen" id="game">
+      <div class="hud">
+        <button class="chunky icon" data-act="levels" aria-label="Back"></button>
+        <div class="stat"><small>LEVEL</small><b id="lvlNo">1</b></div>
+        <div class="pill"><span id="left">4 to pop</span></div>
+        <div class="stat end"><small>TAPS</small><b id="taps">1</b></div>
+        <button class="chunky icon" data-act="rules" aria-label="How to play"></button>
+      </div>
+      <div class="banner" id="banner"><span>Tap the glowing balloon and watch the chain!</span><button data-act="skip">Skip</button></div>
+      <div class="stage" id="stage"><div class="sky"><canvas id="sky" aria-label="The sky. Tap a balloon."></canvas></div></div>
+      <div class="row"><button class="chunky" data-act="retry"></button><button class="chunky" data-act="levels" id="lvlsBtn2"></button></div>
+    </section>
+  </div>
+
+  <div class="bar">
+    <button class="mute" id="mute" aria-label="Sound on/off"></button>
+    <a class="gp" target="_blank" rel="noopener"></a>
+  </div>
+
+  <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+</div>
+<script src="levels.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

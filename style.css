@@ -5,3 +5,4 @@ main{max-width:720px;margin:0 auto;padding:40px 20px 64px}h1{font-size:30px;line
 .card h2{margin-top:0}footer{margin-top:40px;font-size:14px;color:var(--muted)}.game{display:flex;gap:16px;align-items:flex-start}.game img{border-radius:22px;flex:none}
 .play{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;padding:6px 14px;border-radius:999px}
 @media (max-width:480px){.game{flex-direction:column}}
+.try{display:inline-block;border:2px solid var(--accent);color:var(--accent);text-decoration:none;font-weight:600;padding:4px 12px;border-radius:999px;margin-left:4px}
