@@ -102,3 +102,10 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;curs
 .no-play .gp{display:none!important}
 html.shot .screen.on,html.shot .card{animation:none}html.shot .stars svg.on{animation:none}
 .card>.chunky{width:100%}
+
+/* Arrow keys hint + buttons, computers only */
+.keys{display:none;align-items:center;justify-content:center;gap:6px;margin:0 0 10px;flex-wrap:wrap}
+body.mouse .keys{display:flex}
+.keyhint{width:100%;text-align:center;font-size:14px;font-weight:600;color:var(--muted,#7A4E66);margin-bottom:2px}
+.key{width:46px;height:40px;border-radius:12px;border:0;background:#fff;color:#4A1738;font-size:22px;font-weight:700;box-shadow:0 3px 0 #EBD3C2;cursor:pointer}
+.key:active{transform:translateY(2px);box-shadow:0 1px 0 #EBD3C2}

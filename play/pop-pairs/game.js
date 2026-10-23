@@ -407,6 +407,9 @@ function renderGrid() {
 }
 
 const WORD = { U: 'up ↑', D: 'down ↓', L: 'left ←', R: 'right →' };
+// Computers (mouse, no touch) get arrow-key wording and on-screen arrow buttons.
+const MOUSE = matchMedia('(hover: hover) and (pointer: fine)').matches;
+if (MOUSE) document.body.classList.add('mouse');
 function updateHud() {
   $('lvlNo').textContent = game.level.number;
   const mv = $('moves');
@@ -414,7 +417,9 @@ function updateHud() {
   mv.classList.toggle('warn', game.movesLeft <= 3);
   const show = tutorial && board.hint;
   $('banner').classList.toggle('on', !!show);
-  if (show) $('bannerText').textContent = `Swipe ${WORD[board.hint]} anywhere on the board. Equal tiles merge.`;
+  if (show) $('bannerText').textContent = MOUSE
+    ? `Press the ${WORD[board.hint]} arrow key (or drag the board). Equal tiles merge.`
+    : `Swipe ${WORD[board.hint]} anywhere on the board. Equal tiles merge.`;
   const u = $('undoBtn');
   u.disabled = !(game.canUndo && game.freeUndosLeft > 0) || busy;
   u.innerHTML = svg('undo') + 'Undo' + (game.canUndo && game.freeUndosLeft > 0 ? '<span class="badge">1 free</span>' : '');
@@ -446,7 +451,7 @@ function showRules(firstTime) {
   const line = (icon, text) => `<div class="line">${svg(icon)}<span>${text}</span></div>`;
   openCard(`<h3>How to play</h3>
     <div class="line" style="align-items:center">${svg('flag')}<span>Make this tile</span><canvas id="rulesTile" width="76" height="76" style="width:34px;height:34px"></canvas></div>
-    ${line('swipe', 'Swipe to slide every tile. Two equal tiles that meet merge into one: 8 + 8 = 16.')}
+    ${line('swipe', MOUSE ? 'Use the arrow keys ← ↑ → ↓ (or drag the board) to slide every tile. Two equal tiles that meet merge into one: 8 + 8 = 16.' : 'Swipe to slide every tile. Two equal tiles that meet merge into one: 8 + 8 = 16.')}
     ${line('add', 'A new small tile appears after each swipe.')}
     ${line('star', `You have ${game.level.moves} moves. Fewer moves = more stars.`)}
     <button class="chunky primary" data-act="${firstTime ? 'showme' : 'gotit'}">${svg(firstTime ? 'play' : 'check')}${firstTime ? 'Show me' : 'Got it'}</button>`);
@@ -590,6 +595,10 @@ window.addEventListener('pointerup', (ev) => {
   move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'R' : 'L') : dy > 0 ? 'D' : 'U');
 });
 window.addEventListener('pointercancel', () => { drag = null; });
+$('keys').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-dir]');
+  if (b && screen === 'game' && !cardOpen) { Sfx.unlock(); move(b.dataset.dir); }
+});
 document.addEventListener('keydown', (ev) => {
   const k = { ArrowUp: 'U', ArrowDown: 'D', ArrowLeft: 'L', ArrowRight: 'R', w: 'U', s: 'D', a: 'L', d: 'R', W: 'U', S: 'D', A: 'L', D: 'R' }[ev.key];
   if (k && screen === 'game' && !cardOpen) { ev.preventDefault(); Sfx.unlock(); move(k); return; }
