@@ -1,0 +1,17 @@
+{
+    "name": "Balloon Domino",
+    "short_name": "Balloon Domino",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#D3F0FF",
+    "theme_color": "#FF4F87",
+    "description": "One tap, one chain reaction: pop every balloon in the sky.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        { "src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png" },
+        { "src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png" },
+        { "src": "icons/Icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+        { "src": "icons/Icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    ]
+}
