@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="robots" content="noindex">
+  <!-- No <base href>: every URL is relative, so the game also works in a
+       sub-folder (itch.io iframe, website /play/lantern-chain/, Facebook). -->
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="description" content="Lantern Chain: sort the paper lanterns by colour on their strings. A calm colour-sort puzzle from the Hoshikaze Valley lantern festival.">
+  <meta name="theme-color" content="#0B0820">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Lantern Chain">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>Lantern Chain</title>
+  <style>
+    body { -webkit-user-select: none; -moz-user-select: none; user-select: none;
+           -webkit-touch-callout: none; touch-action: none; }
+  </style>
+  <script>
+    window.addEventListener('wheel', function (e) { e.preventDefault(); }, { passive: false });
+    window.addEventListener('keydown', function (e) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].indexOf(e.key) >= 0) e.preventDefault();
+    });
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  </script>
+  <script src="https://bridge.playgama.com/v2/stable/playgama-bridge.js"></script>
+  <script>
+  (function () {
+    var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    var fakeAd = local && (/[?&]fakeAd=(1|fail)/.exec(location.search) || [])[1];
+    var SAVE = 'lc_save';
+    var current = null, booted = false, ready = false;
+    function b() { return window.bridge; }
+
+    function boot() {
+      if (booted) return;
+      booted = true;
+      hookSaves();
+      var go = function () {
+        var s = document.createElement('script');
+        s.src = 'flutter_bootstrap.js';
+        s.async = true;
+        document.body.appendChild(s);
+      };
+      if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+    }
+
+    function restore() {
+      return b().storage.get([SAVE]).then(function (data) {
+        var saved = data && data[0];
+        if (!saved) return;
+        var o = typeof saved === 'string' ? JSON.parse(saved) : saved;
+        Object.keys(o).forEach(function (k) { localStorage.setItem(k, o[k]); });
+        console.log('[vpcPortal] restored', Object.keys(o).length, 'keys from Bridge storage');
+      }).catch(function (e) { console.log('[vpcPortal] storage get failed', String(e)); });
+    }
+
+    function hookSaves() {
+      var timer = null;
+      function saveSoon() {
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+          if (!ready) return;
+          var o = {};
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k.indexOf('flutter.') === 0) o[k] = localStorage.getItem(k);
+          }
+          try {
+            b().storage.set([SAVE], [JSON.stringify(o)]).catch(function (e) {
+              console.log('[vpcPortal] storage set failed', String(e));
+            });
+          } catch (e) {}
+        }, 1000);
+      }
+      var set = Storage.prototype.setItem, remove = Storage.prototype.removeItem;
+      Storage.prototype.setItem = function (k, v) {
+        set.call(this, k, v);
+        if (this === window.localStorage && String(k).indexOf('flutter.') === 0) saveSoon();
+      };
+      Storage.prototype.removeItem = function (k) {
+        remove.call(this, k);
+        if (this === window.localStorage && String(k).indexOf('flutter.') === 0) saveSoon();
+      };
+    }
+
+    function onAd(kind, state) {
+      console.log('[vpcPortal] Bridge ' + kind + ' ' + state);
+      var ad = current;
+      if (!ad || ad.kind !== kind) return;
+      if (state === 'opened' && !ad.started) { ad.started = true; ad.onStart(); }
+      else if (state === 'rewarded') ad.rewarded = true;
+      else if (state === 'failed') ad.end(false, 'failed');
+      else if (state === 'closed') {
+        if (kind === 'interstitial') { ad.end(true, ''); return; }
+        // 'rewarded' may arrive just after 'closed'.
+        setTimeout(function () { ad.end(ad.rewarded, ad.rewarded ? '' : 'not completed'); }, 500);
+      }
+    }
+
+    var timeout = setTimeout(function () { console.log('[vpcPortal] Bridge slow: starting'); boot(); }, 8000);
+    try {
+      b().initialize().then(function () {
+        ready = true;
+        console.log('[vpcPortal] Bridge ready, platform', b().platform.id);
+        var ev = b().EVENT_NAME;
+        b().advertisement.on(ev.INTERSTITIAL_STATE_CHANGED, function (s) { onAd('interstitial', s); });
+        b().advertisement.on(ev.REWARDED_STATE_CHANGED, function (s) { onAd('rewarded', s); });
+        return restore();
+      }).catch(function (e) {
+        console.log('[vpcPortal] Bridge init failed', String(e));
+      }).then(function () { clearTimeout(timeout); boot(); });
+    } catch (e) {
+      console.log('[vpcPortal] Bridge missing', String(e));
+      boot();
+    }
+
+    var MESSAGES = { loadingStop: 'game_ready', gameplayStart: 'level_started', happytime: 'level_completed' };
+    function event(name) {
+      var m = MESSAGES[name];
+      if (!m || !ready) { console.log('[vpcPortal] ' + name + ' (no Bridge message)'); return; }
+      try { b().platform.sendMessage(m); console.log('[vpcPortal] ' + name + ' -> ' + m); }
+      catch (e) { console.log('[vpcPortal] ' + m + ' failed', String(e)); }
+    }
+
+    // The platform's audio switch and pause (tab hidden, its own ads):
+    // onQuiet(true) = keep the game silent.
+    function listen(onQuiet) {
+      if (!ready) return;
+      try {
+        var p = b().platform, ev = b().EVENT_NAME;
+        var audio = p.isAudioEnabled !== false, paused = false;
+        var tell = function () { onQuiet(!audio || paused); };
+        p.on(ev.AUDIO_STATE_CHANGED, function (on) { audio = !!on; console.log('[vpcPortal] audio', on); tell(); });
+        p.on(ev.PAUSE_STATE_CHANGED, function (on) { paused = !!on; console.log('[vpcPortal] pause', on); tell(); });
+        if (!audio) tell();
+      } catch (e) { console.log('[vpcPortal] listen failed', String(e)); }
+    }
+
+    // Local test only (127.0.0.1 + ?fakeAd=1): a 3 s simulated ad;
+    // ?fakeAd=fail: the ad errors at once (like no fill).
+    function simulate(type, started, done) {
+      if (fakeAd === 'fail') { done(false, 'unfilled'); return; }
+      var d = document.createElement('div');
+      d.textContent = 'SIMULATED ' + type.toUpperCase() + ' AD';
+      d.style.cssText = 'position:fixed;inset:0;z-index:99;display:flex;align-items:center;' +
+        'justify-content:center;background:#000c;color:#fff;font:700 22px system-ui';
+      document.body.appendChild(d);
+      started();
+      setTimeout(function () { d.remove(); done(true, ''); }, 3000);
+    }
+
+    function requestAd(type, started, done) {
+      var kind = type === 'rewarded' ? 'rewarded' : 'interstitial';
+      var finished = false, ad = null, wait = null;
+      function end(ok, reason) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(wait);
+        if (current === ad) current = null;
+        console.log('[vpcPortal] ' + type + ' ad ' + (ok ? 'finished' : 'error: ' + reason));
+        done(ok, reason);
+      }
+      function onStart() { console.log('[vpcPortal] ' + type + ' ad started'); started(); }
+      if (fakeAd) { simulate(type, onStart, end); return; }
+      if (!ready) { end(false, 'nosdk'); return; }
+      var a = b().advertisement;
+      if (!(kind === 'rewarded' ? a.isRewardedSupported : a.isInterstitialSupported)) { end(false, 'unsupported'); return; }
+      ad = { kind: kind, started: false, rewarded: false, onStart: onStart, end: end };
+      current = ad;
+      wait = setTimeout(function () { if (!ad.started) end(false, 'not shown'); }, 8000);
+      try {
+        if (kind === 'rewarded') a.showRewarded('reward'); else a.showInterstitial('level_completed');
+      } catch (e) { end(false, 'exception: ' + e); }
+    }
+
+    window.vpcPortal = { event: event, requestAd: requestAd, listen: listen };
+  })();
+  </script>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { margin: 0; height: 100%; background: #0B0820; overflow: hidden; }
+    #loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+      color: #9BFBFF; font: 600 16px system-ui, sans-serif; letter-spacing: 2px;
+      background: radial-gradient(circle at 50% 35%, #2E2A6B, #0B0820 70%);
+    }
+    #loading .lantern {
+      width: 46px; height: 40px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #FFE6F2, #FF5FB0 55%, #8A2050);
+      box-shadow: 0 0 28px #FF5FB0; animation: sway 1.6s ease-in-out infinite;
+    }
+    @keyframes sway { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+  </style>
+</head>
+<body>
+  <div id="loading"><div class="lantern"></div>LIGHTING THE LANTERNS…</div>
+</body>
+</html>
