@@ -43,7 +43,63 @@
   </style>
 </head>
 <body>
-  <div id="loading"><div class="lantern"></div>LIGHTING THE LANTERNS…</div>
+  <style>
+    #vpc-loader { position: fixed; inset: 0; z-index: 50; overflow: hidden; background: #150f35;
+      transition: opacity .35s; font: 700 15px system-ui, sans-serif; color: #fff; }
+    #vpc-loader .blur { position: absolute; inset: -40px; background: url(loader.webp) center / cover;
+      filter: blur(22px) brightness(.55); }
+    #vpc-loader img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    #vpc-loader .box { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
+      width: min(72vw, 520px); text-align: center; }
+    #vpc-loader .bar { height: 16px; border-radius: 9px; background: #0009; border: 2px solid #fff6;
+      overflow: hidden; box-shadow: 0 0 18px #0008; }
+    #vpc-loader .fill { height: 100%; width: 3%; border-radius: 7px; transition: width .25s;
+      background: linear-gradient(90deg, #ff3da8, #ffd34d); box-shadow: 0 0 14px #ff3da8; }
+    #vpc-loader .txt { margin-top: 8px; letter-spacing: 1px; text-shadow: 0 1px 4px #000; }
+    #vpc-loader .tip { margin-top: 4px; font-size: 13px; opacity: .85; text-shadow: 0 1px 4px #000; }
+  </style>
+  <div id="vpc-loader"><div class="blur"></div><img src="loader.webp" alt="Lantern Chain">
+    <div class="box"><div class="bar"><div class="fill"></div></div>
+      <div class="txt">LOADING…</div><div class="tip">Move lanterns. Fill a string with one colour to light it.</div></div></div>
+  <script>
+  (function () {
+    var total = 8596852, got = 0, shown = 0.03, seen = {}, done = false;
+    var el = document.getElementById('vpc-loader');
+    var fill = el.querySelector('.fill'), txt = el.querySelector('.txt');
+    function mb(b) { return (b / 1048576).toFixed(1); }
+    function draw() {
+      fill.style.width = (shown * 100).toFixed(1) + '%';
+      txt.textContent = 'LOADING… ' + mb(Math.min(got, total)) + ' / ' + mb(total) + ' MB';
+    }
+    try {
+      new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (e) {
+          if (seen[e.name]) return;
+          seen[e.name] = 1;
+          got += e.decodedBodySize || e.encodedBodySize || 0;
+        });
+      }).observe({ type: 'resource', buffered: true });
+    } catch (e) {}
+    var timer = setInterval(function () {
+      if (done) return;
+      var real = Math.min(0.97, got / total);
+      // Creep towards the next step while a big file is still coming.
+      shown = Math.max(real, shown + (Math.min(real + 0.15, 0.95) - shown) * 0.04);
+      draw();
+    }, 100);
+    draw();
+    window.vpcLoaderDone = function () {
+      if (done) return;
+      done = true;
+      clearInterval(timer);
+      shown = 1;
+      got = total;
+      draw();
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 400);
+    };
+  })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -1,55 +1,108 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Balloon Domino – play the demo</title>
-<meta name="description" content="Play the first 10 skies of Balloon Domino, the one-tap chain-reaction puzzle, right in your browser.">
-<meta name="theme-color" content="#D3F0FF">
-<link rel="stylesheet" href="style.css">
+  <!-- No <base href>: every URL is relative, so the game also works in a
+       sub-folder (portal iframes, itch.io, our website). -->
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="description" content="Balloon Domino: one tap, one chain reaction. Pick the right balloon and its darts pop the whole sky.">
+  <meta name="theme-color" content="#FF4F87">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Balloon Domino">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>Balloon Domino</title>
+  <style>
+    body { -webkit-user-select: none; -moz-user-select: none; user-select: none;
+           -webkit-touch-callout: none; touch-action: none; }
+  </style>
+  <script>
+    window.addEventListener('wheel', function (e) { e.preventDefault(); }, { passive: false });
+    window.addEventListener('keydown', function (e) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].indexOf(e.key) >= 0) e.preventDefault();
+    });
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  </script>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    html, body { margin: 0; height: 100%; background: #D3F0FF; overflow: hidden; }
+    #loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+      color: #4A1738; font: 700 16px system-ui, sans-serif; letter-spacing: 2px;
+      background: linear-gradient(#D3F0FF, #FFF1E4);
+    }
+    #loading .balloon {
+      width: 44px; height: 54px; border-radius: 50% 50% 48% 48%;
+      background: radial-gradient(circle at 35% 30%, #FFD1E0, #FF4F87 55%, #C92E62);
+      position: relative; animation: bob 1.4s ease-in-out infinite;
+    }
+    #loading .balloon::after {
+      content: ''; position: absolute; left: 21px; top: 56px; width: 2px; height: 26px; background: #8A4E6E;
+    }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  </style>
 </head>
 <body>
-<div class="frame" id="frame">
-  <div class="screens">
-    <section class="screen" id="home">
-      <canvas id="backdrop" aria-hidden="true"></canvas>
-      <div class="title">
-        <h1>Balloon<br>Domino</h1>
-        <p>One tap. One chain. Clear the sky.</p>
-        <span class="demo-tag">Browser demo · 10 skies</span>
-      </div>
-      <button class="chunky primary big" id="playBtn"></button>
-      <div class="row"><button class="chunky" id="levelsBtn"></button></div>
-    </section>
-
-    <section class="screen" id="levels">
-      <div class="hud"><button class="chunky icon" data-act="home" aria-label="Back"></button><h2>Levels</h2></div>
-      <div class="grid" id="grid"></div>
-      <p class="more">The full game has 400 skies, armoured balloons, bombs and two-tap skies.</p>
-    </section>
-
-    <section class="screen" id="game">
-      <div class="hud">
-        <button class="chunky icon" data-act="levels" aria-label="Back"></button>
-        <div class="stat"><small>LEVEL</small><b id="lvlNo">1</b></div>
-        <div class="pill"><span id="left">4 to pop</span></div>
-        <div class="stat end"><small>TAPS</small><b id="taps">1</b></div>
-        <button class="chunky icon" data-act="rules" aria-label="How to play"></button>
-      </div>
-      <div class="banner" id="banner"><span>Tap the glowing balloon and watch the chain!</span><button data-act="skip">Skip</button></div>
-      <div class="stage" id="stage"><div class="sky"><canvas id="sky" aria-label="The sky. Tap a balloon."></canvas></div></div>
-      <div class="row"><button class="chunky" data-act="retry"></button><button class="chunky" data-act="levels" id="lvlsBtn2"></button></div>
-    </section>
-  </div>
-
-  <div class="bar">
-    <button class="mute" id="mute" aria-label="Sound on/off"></button>
-    <a class="gp" target="_blank" rel="noopener"></a>
-  </div>
-
-  <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
-</div>
-<script src="levels.js"></script>
-<script src="game.js"></script>
+  <style>
+    #vpc-loader { position: fixed; inset: 0; z-index: 50; overflow: hidden; background: #ff6f7f;
+      transition: opacity .35s; font: 700 15px system-ui, sans-serif; color: #fff; }
+    #vpc-loader .blur { position: absolute; inset: -40px; background: url(loader.webp) center / cover;
+      filter: blur(22px) brightness(.55); }
+    #vpc-loader img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    #vpc-loader .box { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%);
+      width: min(72vw, 520px); text-align: center; }
+    #vpc-loader .bar { height: 16px; border-radius: 9px; background: #0009; border: 2px solid #fff6;
+      overflow: hidden; box-shadow: 0 0 18px #0008; }
+    #vpc-loader .fill { height: 100%; width: 3%; border-radius: 7px; transition: width .25s;
+      background: linear-gradient(90deg, #ffc400, #ffd34d); box-shadow: 0 0 14px #ffc400; }
+    #vpc-loader .txt { margin-top: 8px; letter-spacing: 1px; text-shadow: 0 1px 4px #000; }
+    #vpc-loader .tip { margin-top: 4px; font-size: 13px; opacity: .85; text-shadow: 0 1px 4px #000; }
+  </style>
+  <div id="vpc-loader"><div class="blur"></div><img src="loader.webp" alt="Balloon Domino">
+    <div class="box"><div class="bar"><div class="fill"></div></div>
+      <div class="txt">LOADING…</div><div class="tip">One tap. One chain. Clear the sky.</div></div></div>
+  <script>
+  (function () {
+    var total = 9283286, got = 0, shown = 0.03, seen = {}, done = false;
+    var el = document.getElementById('vpc-loader');
+    var fill = el.querySelector('.fill'), txt = el.querySelector('.txt');
+    function mb(b) { return (b / 1048576).toFixed(1); }
+    function draw() {
+      fill.style.width = (shown * 100).toFixed(1) + '%';
+      txt.textContent = 'LOADING… ' + mb(Math.min(got, total)) + ' / ' + mb(total) + ' MB';
+    }
+    try {
+      new PerformanceObserver(function (list) {
+        list.getEntries().forEach(function (e) {
+          if (seen[e.name]) return;
+          seen[e.name] = 1;
+          got += e.decodedBodySize || e.encodedBodySize || 0;
+        });
+      }).observe({ type: 'resource', buffered: true });
+    } catch (e) {}
+    var timer = setInterval(function () {
+      if (done) return;
+      var real = Math.min(0.97, got / total);
+      // Creep towards the next step while a big file is still coming.
+      shown = Math.max(real, shown + (Math.min(real + 0.15, 0.95) - shown) * 0.04);
+      draw();
+    }, 100);
+    draw();
+    window.vpcLoaderDone = function () {
+      if (done) return;
+      done = true;
+      clearInterval(timer);
+      shown = 1;
+      got = total;
+      draw();
+      el.style.opacity = '0';
+      setTimeout(function () { el.remove(); }, 400);
+    };
+  })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
